@@ -1,6 +1,6 @@
 import Foundation
 
-class VKAPIDirectory {
+public class VKAPIDirectory {
     public struct API {
         let type: VKVehicleAPI.Type
         let make: String
