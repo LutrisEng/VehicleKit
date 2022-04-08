@@ -6,7 +6,7 @@ public class VKAPIDirectory {
         let make: String
     }
 
-    public let apis = [
+    public static let apis = [
         API(type: VKTeslaAPI.self, make: "Tesla"),
         API(type: VKBMWConnectedDriveAPI.self, make: "BMW")
     ]
