@@ -42,10 +42,9 @@ public class VKBMWConnectedDriveAPI: VKVehicleAPIBase<VKBMWConnectedDriveAPI.Cre
     // From https://github.com/jorgenkg/nodejs-connected-drive/blob/master/lib/config/default.ts
     public var authConfig = AuthConfig(
         host: "https://customer.bmwgroup.com",
-        state:
-            "eyJtYXJrZXQiOiJubyIsImxhbmd1YWdlIjoibm8iLCJkZXN0aW5hdGlvbiI6ImxhbmRpbmdQYWdlIiwicGFyYW1ldGVycyI6Int9In0",
+        state: "https://mygarage.bmwusa.com/",
         endpoints: Endpoints(authenticate: "/gcdm/oauth/authenticate"),
-        clientID: "dbf0a542-ebd1-4ff0-a9a7-55172fbfce35",
+        clientID: "0ff35533-1794-499b-90bb-1a80ddc24e20",
         redirectURI: "https://www.bmw-connecteddrive.com/app/static/external-dispatch.html",
         responseType: "token",
         scope: "authenticate_user vehicle_data remote_services"
