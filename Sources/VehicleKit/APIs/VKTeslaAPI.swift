@@ -21,6 +21,7 @@ public class VKTeslaAPI: VKVehicleAPIBase<AuthToken>, VKVehicleAPI {
     #endif
 
     public enum AuthError: Error {
+        case notYetImplemented
         case notSupportedOnMacOS
     }
 
@@ -31,20 +32,22 @@ public class VKTeslaAPI: VKVehicleAPIBase<AuthToken>, VKVehicleAPI {
 
     public func beginAuthentication() async -> VKAuthenticationPrompt? {
         #if canImport(WebKit) && canImport(UIKit)
-        if let credentials = credentials {
-            api.reuse(token: credentials)
-            return nil
-        }
-        guard let authViewController = api.authenticateWeb(completion: { result in
-            switch result {
-            case .success(let token):
-                self.credentials = token
-                self.authError = nil
-            case .failure(let error):
-                self.authError = error
-            }
-        }) else { return nil }
-        return .view(view: AuthenticationView(authViewController: authViewController).vkView)
+        // if let credentials = credentials {
+        //     api.reuse(token: credentials)
+        //     return nil
+        // }
+        // guard let authViewController = api.authenticateWeb(completion: { result in
+        //     switch result {
+        //     case .success(let token):
+        //         self.credentials = token
+        //         self.authError = nil
+        //     case .failure(let error):
+        //         self.authError = error
+        //     }
+        // }) else { return nil }
+        // return .view(view: AuthenticationView(authViewController: authViewController).vkView)
+        authError = AuthError.notYetImplemented
+        return nil
         #else
         authError = AuthError.notSupportedOnMacOS
         return nil
