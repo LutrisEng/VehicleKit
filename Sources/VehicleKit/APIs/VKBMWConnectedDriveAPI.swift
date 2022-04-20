@@ -112,7 +112,11 @@ public class VKBMWConnectedDriveAPI: VKVehicleAPIBase<VKBMWConnectedDriveAPI.Cre
             method: "POST",
             body: body.data(using: .utf8),
             headers: [
-                "Content-Type": "application/x-www-form-urlencoded"
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Accept": "application/json, text/plain, */*",
+                "Origin": "https://login.bmwusa.com",
+                "Referer": "https://login.bmwusa.com/",
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.88 Safari/537.36"
             ]
         ).data
         return response.redirectTo.dropFirst("redirect_uri=".count)
