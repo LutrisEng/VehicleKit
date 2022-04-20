@@ -4,11 +4,12 @@ struct VKHTTP {
     enum HTTPError: Error {
         case incompleteResponse
         case invalidURL
+        case errorStatus(code: Int, body: String?, rawBody: Data)
     }
 
     struct Response<ResponseType: Codable> {
         let data: ResponseType
-        let response: URLResponse
+        let response: HTTPURLResponse
     }
 
     static let jsonDecoder = JSONDecoder()
@@ -25,17 +26,24 @@ struct VKHTTP {
             request.setValue(header.value, forHTTPHeaderField: header.key)
         }
         request.httpBody = body
-        let (data, response): (Data, URLResponse) = try await withCheckedThrowingContinuation { continuation in
+        let (data, response): (Data, HTTPURLResponse) = try await withCheckedThrowingContinuation { continuation in
             let task = URLSession.shared.dataTask(with: request) { data, response, error in
                 if let error = error {
                     continuation.resume(throwing: error)
-                } else if let data = data, let response = response {
+                } else if let data = data, let response = response as? HTTPURLResponse {
                     continuation.resume(returning: (data, response))
                 } else {
                     continuation.resume(throwing: HTTPError.incompleteResponse)
                 }
             }
             task.resume()
+        }
+        if response.statusCode >= 400 {
+            throw HTTPError.errorStatus(
+                code: response.statusCode,
+                body: String(decoding: data, as: UTF8.self),
+                rawBody: data
+            )
         }
         return Response(data: data, response: response)
     }

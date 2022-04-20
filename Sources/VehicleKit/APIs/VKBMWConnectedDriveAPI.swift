@@ -5,19 +5,13 @@ public class VKBMWConnectedDriveAPI: VKVehicleAPIBase<VKBMWConnectedDriveAPI.Cre
         case authenticatingWithoutCredentials
         case cantEncodeRequestBody
         case invalidAuthConfig
-        case authResponseNotHTTP
-        case authResponseMissingLocation(
-            status: Int,
-            headers: [AnyHashable: Any],
-            responseData: Data,
-            responseString: String?
-        )
         case cantDecodeAuthResponseLocation(location: String)
         case authResponseMissingToken(location: String)
         case authResponseMissingExpires(location: String)
         case invalidHost
         case responseInvalid
         case invalidURL
+        case invalidRedirectTo(redirectTo: String)
     }
 
     public struct Credentials: Codable {
@@ -107,7 +101,7 @@ public class VKBMWConnectedDriveAPI: VKVehicleAPIBase<VKBMWConnectedDriveAPI.Cre
             throw APIError.cantEncodeRequestBody
         }
         let url = try pathToURL(path: authConfig.endpoints.authenticate)
-        let response: AuthResponse = try await VKHTTP.request(
+        let response: VKHTTP.Response<AuthResponse> = try await VKHTTP.request(
             url,
             method: "POST",
             body: body.data(using: .utf8),
@@ -118,8 +112,12 @@ public class VKBMWConnectedDriveAPI: VKVehicleAPIBase<VKBMWConnectedDriveAPI.Cre
                 "Referer": "https://login.bmwusa.com/",
                 "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.88 Safari/537.36"
             ]
-        ).data
-        return String(response.redirectTo.dropFirst("redirect_uri=".count))
+        )
+        let redirectTo = response.data.redirectTo
+        if !redirectTo.starts(with: "redirect_uri=") {
+            throw APIError.invalidRedirectTo(redirectTo: redirectTo)
+        }
+        return String(redirectTo.dropFirst("redirect_uri=".count))
     }
 
     private func authenticate() async throws -> Session {
