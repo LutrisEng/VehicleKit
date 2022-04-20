@@ -5,7 +5,11 @@ public class VKBMWConnectedDriveAPI: VKVehicleAPIBase<VKBMWConnectedDriveAPI.Cre
         case authenticatingWithoutCredentials
         case cantEncodeRequestBody
         case invalidAuthConfig
-        case authResponseInvalid
+        case authResponseNotHTTP
+        case authResponseMissingLocation
+        case cantDecodeAuthResponseLocation(location: String)
+        case authResponseMissingToken(location: String)
+        case authResponseMissingExpires(location: String)
         case invalidHost
         case responseInvalid
         case invalidURL
@@ -97,10 +101,10 @@ public class VKBMWConnectedDriveAPI: VKVehicleAPIBase<VKBMWConnectedDriveAPI.Cre
             ]
         ).response
         guard let response = unknownResponse as? HTTPURLResponse else {
-            throw APIError.authResponseInvalid
+            throw APIError.authResponseNotHTTP
         }
         guard let location = response.value(forHTTPHeaderField: "Location") else {
-            throw APIError.authResponseInvalid
+            throw APIError.authResponseMissingLocation
         }
         return location
     }
@@ -109,7 +113,7 @@ public class VKBMWConnectedDriveAPI: VKVehicleAPIBase<VKBMWConnectedDriveAPI.Cre
         guard let credentials = credentials else { throw APIError.authenticatingWithoutCredentials }
         let location = try await authRedirectLocation(credentials: credentials)
         guard let locationComponents = URLComponents(string: location) else {
-            throw APIError.authResponseInvalid
+            throw APIError.cantDecodeAuthResponseLocation(location: location)
         }
         var maybeToken: String?
         var maybeExpires: Date?
@@ -126,9 +130,8 @@ public class VKBMWConnectedDriveAPI: VKVehicleAPIBase<VKBMWConnectedDriveAPI.Cre
             default: break
             }
         }
-        guard let token = maybeToken, let expires = maybeExpires else {
-            throw APIError.authResponseInvalid
-        }
+        guard let token = maybeToken else { throw APIError.authResponseMissingToken(location: location) }
+        guard let expires = maybeExpires else { throw APIError.authResponseMissingExpires(location: location) }
         let session = Session(expires: expires, token: token)
         self.session = session
         return session
