@@ -46,11 +46,11 @@ public struct VKVINDecoder {
     }
 
     public struct Result {
-        var errorCode: Int = 0
+        public var errorCode: Int = 0
 
-        var make: String?
-        var model: String?
-        var modelYear: Int?
+        public var make: String?
+        public var model: String?
+        public var modelYear: Int?
     }
 
     public static func decode(vin: String) async throws -> Result {
