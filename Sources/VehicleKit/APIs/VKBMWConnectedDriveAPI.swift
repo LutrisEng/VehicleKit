@@ -16,10 +16,11 @@ public class VKBMWConnectedDriveAPI: VKVehicleAPIBase<VKBMWConnectedDriveAPI.Cre
         let password: String
     }
 
+    public struct Endpoints {
+        let authenticate: String
+    }
+
     public struct AuthConfig {
-        public struct Endpoints {
-            let authenticate: String
-        }
         let host: String
         let state: String
         let endpoints: Endpoints
@@ -32,8 +33,9 @@ public class VKBMWConnectedDriveAPI: VKVehicleAPIBase<VKBMWConnectedDriveAPI.Cre
     // From https://github.com/jorgenkg/nodejs-connected-drive/blob/master/lib/config/default.ts
     public var authConfig = AuthConfig(
         host: "https://customer.bmwgroup.com",
-        state: "eyJtYXJrZXQiOiJubyIsImxhbmd1YWdlIjoibm8iLCJkZXN0aW5hdGlvbiI6ImxhbmRpbmdQYWdlIiwicGFyYW1ldGVycyI6Int9In0",
-        endpoints: AuthConfig.Endpoints(authenticate: "/gcdm/oauth/authenticate"),
+        state:
+            "eyJtYXJrZXQiOiJubyIsImxhbmd1YWdlIjoibm8iLCJkZXN0aW5hdGlvbiI6ImxhbmRpbmdQYWdlIiwicGFyYW1ldGVycyI6Int9In0",
+        endpoints: Endpoints(authenticate: "/gcdm/oauth/authenticate"),
         clientID: "dbf0a542-ebd1-4ff0-a9a7-55172fbfce35",
         redirectURI: "https://www.bmw-connecteddrive.com/app/static/external-dispatch.html",
         responseType: "token",
@@ -57,64 +59,70 @@ public class VKBMWConnectedDriveAPI: VKVehicleAPIBase<VKBMWConnectedDriveAPI.Cre
         }
     }
 
-    private func authenticate() async throws -> Session {
-        if let credentials = credentials {
-            let parameters = [
-                "client_id": authConfig.clientID,
-                "redirect_uri": authConfig.redirectURI,
-                "response_type": authConfig.responseType,
-                "scope": authConfig.scope,
-                "username": credentials.username,
-                "password": credentials.password,
-                "state": authConfig.state
-            ]
-            guard let body = VKCommon.encodeURIQuery(parameters: parameters) else {
-                throw APIError.cantEncodeRequestBody
-            }
-            guard let url = URL(string: authConfig.endpoints.authenticate) else {
-                throw APIError.invalidAuthConfig
-            }
-            let unknownResponse: URLResponse = try await VKHTTP.rawRequest(
-                url,
-                method: "POST",
-                body: body.data(using: .utf8),
-                headers: [
-                    "Content-Type": "application/x-www-form-urlencoded"
-                ]
-            ).response
-            guard let response = unknownResponse as? HTTPURLResponse else {
-                throw APIError.authResponseInvalid
-            }
-            guard let location = response.value(forHTTPHeaderField: "Location") else {
-                throw APIError.authResponseInvalid
-            }
-            guard let locationComponents = URLComponents(string: location) else {
-                throw APIError.authResponseInvalid
-            }
-            var maybeToken: String?
-            var maybeExpires: Date?
-            for item in (locationComponents.queryItems ?? []) {
-                switch item.name {
-                case "access_token":
-                    if let token = item.value {
-                        maybeToken = token
-                    }
-                case "expires_in":
-                    if let expiresInString = item.value, let expiresIn = Double(expiresInString) {
-                        maybeExpires = Date.now.addingTimeInterval(expiresIn)
-                    }
-                default: break
-                }
-            }
-            guard let token = maybeToken, let expires = maybeExpires else {
-                throw APIError.authResponseInvalid
-            }
-            let session = Session(expires: expires, token: token)
-            self.session = session
-            return session
-        } else {
-            throw APIError.authenticatingWithoutCredentials
+    private func authenticationParameters(credentials: Credentials) -> [String: String] {
+        return [
+            "client_id": authConfig.clientID,
+            "redirect_uri": authConfig.redirectURI,
+            "response_type": authConfig.responseType,
+            "scope": authConfig.scope,
+            "username": credentials.username,
+            "password": credentials.password,
+            "state": authConfig.state
+        ]
+    }
+
+    private func authRedirectLocation(credentials: Credentials) async throws -> String {
+        let parameters = authenticationParameters(credentials: credentials)
+        guard let body = VKCommon.encodeURIQuery(parameters: parameters) else {
+            throw APIError.cantEncodeRequestBody
         }
+        guard let url = URL(string: authConfig.endpoints.authenticate) else {
+            throw APIError.invalidAuthConfig
+        }
+        let unknownResponse: URLResponse = try await VKHTTP.rawRequest(
+            url,
+            method: "POST",
+            body: body.data(using: .utf8),
+            headers: [
+                "Content-Type": "application/x-www-form-urlencoded"
+            ]
+        ).response
+        guard let response = unknownResponse as? HTTPURLResponse else {
+            throw APIError.authResponseInvalid
+        }
+        guard let location = response.value(forHTTPHeaderField: "Location") else {
+            throw APIError.authResponseInvalid
+        }
+        return location
+    }
+
+    private func authenticate() async throws -> Session {
+        guard let credentials = credentials else { throw APIError.authenticatingWithoutCredentials }
+        let location = try await authRedirectLocation(credentials: credentials)
+        guard let locationComponents = URLComponents(string: location) else {
+            throw APIError.authResponseInvalid
+        }
+        var maybeToken: String?
+        var maybeExpires: Date?
+        for item in (locationComponents.queryItems ?? []) {
+            switch item.name {
+            case "access_token":
+                if let token = item.value {
+                    maybeToken = token
+                }
+            case "expires_in":
+                if let expiresInString = item.value, let expiresIn = Double(expiresInString) {
+                    maybeExpires = Date.now.addingTimeInterval(expiresIn)
+                }
+            default: break
+            }
+        }
+        guard let token = maybeToken, let expires = maybeExpires else {
+            throw APIError.authResponseInvalid
+        }
+        let session = Session(expires: expires, token: token)
+        self.session = session
+        return session
     }
 
     private func getSession() async throws -> Session {
@@ -200,12 +208,12 @@ extension VKBMWConnectedDriveAPI: VKVehiclesAPI {
 }
 
 extension VKBMWConnectedDriveAPI: VKOdometerAPI {
+    private struct TechnicalResponseAttributesMap: Codable {
+        let mileage: String?
+        let unitOfLength: String?
+    }
     private struct TechnicalResponseItem: Codable {
-        struct AttributesMap: Codable {
-            let mileage: String?
-            let unitOfLength: String?
-        }
-        let attributesMap: AttributesMap
+        let attributesMap: TechnicalResponseAttributesMap
     }
 
     public func readOdometer(vehicle: String) async throws -> Measurement<UnitLength>? {

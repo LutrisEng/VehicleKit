@@ -19,7 +19,7 @@ public class VKTeslaAPI: VKVehicleAPIBase<AuthToken>, VKVehicleAPI {
         }
     }
     #endif
-    
+
     public enum AuthError: Error {
         case notSupportedOnMacOS
     }

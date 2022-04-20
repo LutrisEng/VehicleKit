@@ -1,5 +1,7 @@
 import Foundation
 
+// swiftlint:disable identifier_name
+
 public struct VKVINDecoder {
     public struct Result: Codable {
         // Generate with this JS:
@@ -174,7 +176,7 @@ public struct VKVINDecoder {
         let SearchCriteria: String
         let Results: [Result]
     }
-    
+
     public enum DecodeError: Error {
         case missingResult
     }

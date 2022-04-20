@@ -7,9 +7,9 @@ class VKCommon {
     }
 
     static func encodeURIQuery(parameters: [String: String]) -> String? {
-        let components = parameters.compactMap { (k, v) -> String? in
-            if let k = encodeURIComponent(k), let v = encodeURIComponent(v) {
-                return "\(k)=\(v)"
+        let components = parameters.compactMap { (key, value) -> String? in
+            if let key = encodeURIComponent(key), let value = encodeURIComponent(value) {
+                return "\(key)=\(value)"
             } else {
                 return nil
             }

@@ -5,14 +5,14 @@ struct VKHTTP {
         case incompleteResponse
         case invalidURL
     }
-    
+
     struct Response<ResponseType: Codable> {
         let data: ResponseType
         let response: URLResponse
     }
 
     static let jsonDecoder = JSONDecoder()
-    
+
     static func rawRequest(
         _ url: URL,
         method: String = "GET",
@@ -25,8 +25,7 @@ struct VKHTTP {
             request.setValue(header.value, forHTTPHeaderField: header.key)
         }
         request.httpBody = body
-        let (data, response): (Data, URLResponse) = try await withCheckedThrowingContinuation {
-            continuation in
+        let (data, response): (Data, URLResponse) = try await withCheckedThrowingContinuation { continuation in
             let task = URLSession.shared.dataTask(with: request) { data, response, error in
                 if let error = error {
                     continuation.resume(throwing: error)
