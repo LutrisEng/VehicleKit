@@ -39,7 +39,7 @@ public class VKTeslaAPI: VKVehicleAPIBase<AuthToken>, VKVehicleAPI {
         }) else { return nil }
         return .view(view: AuthenticationView(authViewController: authViewController).vkView)
     }
-    
+
     public func finishAuthentication(response: VKAuthenticationResponse) async throws {
         if let authError = authError {
             throw authError

@@ -15,12 +15,11 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/jonasman/TeslaSwift.git", .upToNextMajor(from: "7.1.0")),
-        .package(url: "https://github.com/Alamofire/Alamofire.git", .upToNextMajor(from: "5.5.0")),
     ],
     targets: [
         .target(
             name: "VehicleKit",
-            dependencies: ["TeslaSwift", "Alamofire"]),
+            dependencies: ["TeslaSwift"]),
         .testTarget(
             name: "VehicleKitTests",
             dependencies: ["VehicleKit"]),

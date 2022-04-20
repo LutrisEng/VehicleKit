@@ -8,6 +8,7 @@ public class VKBMWConnectedDriveAPI: VKVehicleAPIBase<VKBMWConnectedDriveAPI.Cre
         case authResponseInvalid
         case invalidHost
         case responseInvalid
+        case invalidURL
     }
 
     public struct Credentials: Codable {
@@ -98,8 +99,8 @@ public class VKBMWConnectedDriveAPI: VKVehicleAPIBase<VKBMWConnectedDriveAPI.Cre
             guard let locationComponents = URLComponents(string: location) else {
                 throw APIError.authResponseInvalid
             }
-            var maybeToken: String? = nil
-            var maybeExpires: Date? = nil
+            var maybeToken: String?
+            var maybeExpires: Date?
             for item in (locationComponents.queryItems ?? []) {
                 switch item.name {
                 case "access_token":
@@ -163,11 +164,14 @@ public class VKBMWConnectedDriveAPI: VKVehicleAPIBase<VKBMWConnectedDriveAPI.Cre
         forceLogin: Bool = false
     ) async throws -> ResponseType {
         let session = try await getSession()
-        guard var url = URLComponents(string: host) else {
+        guard var components = URLComponents(string: host) else {
             throw APIError.invalidHost
         }
-        url.path = path
-        var request = URLRequest(url: try url.asURL())
+        components.path = path
+        guard let url = components.url else {
+            throw APIError.invalidURL
+        }
+        var request = URLRequest(url: url)
         request.httpMethod = method
         request.setValue("Bearer \(session.token)", forHTTPHeaderField: "Authorization")
         for header in headers {
