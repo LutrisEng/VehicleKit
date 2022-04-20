@@ -119,7 +119,7 @@ public class VKBMWConnectedDriveAPI: VKVehicleAPIBase<VKBMWConnectedDriveAPI.Cre
                 "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.88 Safari/537.36"
             ]
         ).data
-        return response.redirectTo.dropFirst("redirect_uri=".count)
+        return String(response.redirectTo.dropFirst("redirect_uri=".count))
     }
 
     private func authenticate() async throws -> Session {
