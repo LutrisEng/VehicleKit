@@ -2,6 +2,7 @@ import SwiftUI
 import TeslaSwift
 
 public class VKTeslaAPI: VKVehicleAPIBase<AuthToken>, VKVehicleAPI {
+    #if canImport(WebKit) && canImport(UIKit)
     struct AuthenticationView: UIViewControllerRepresentable {
         let authViewController: TeslaWebLoginViewController
 
@@ -17,6 +18,11 @@ public class VKTeslaAPI: VKVehicleAPIBase<AuthToken>, VKVehicleAPI {
             VKView(type: .teslaAuthenticationView(view: self))
         }
     }
+    #endif
+    
+    public enum AuthError: Error {
+        case notSupportedOnMacOS
+    }
 
     private let api = TeslaSwift()
     private var authError: Error?
@@ -24,6 +30,7 @@ public class VKTeslaAPI: VKVehicleAPIBase<AuthToken>, VKVehicleAPI {
     required public override init() {}
 
     public func beginAuthentication() async -> VKAuthenticationPrompt? {
+        #if canImport(WebKit) && canImport(UIKit)
         if let credentials = credentials {
             api.reuse(token: credentials)
             return nil
@@ -38,6 +45,10 @@ public class VKTeslaAPI: VKVehicleAPIBase<AuthToken>, VKVehicleAPI {
             }
         }) else { return nil }
         return .view(view: AuthenticationView(authViewController: authViewController).vkView)
+        #else
+        authError = AuthError.notSupportedOnMacOS
+        return nil
+        #endif
     }
 
     public func finishAuthentication(response: VKAuthenticationResponse) async throws {

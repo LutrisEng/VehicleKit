@@ -55,7 +55,7 @@ public struct VKVINDecoder {
 
     public static func decode(vin: String) async throws -> Result {
         let url = "https://vpic.nhtsa.dot.gov/api/vehicles/decodevin/\(vin)?format=json"
-        let response: Response = try await VKHTTP.request(url)
+        let response: Response = try await VKHTTP.request(url).data
         return response.toResult()
     }
 }

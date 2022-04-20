@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "VehicleKit",
     platforms: [
-        .iOS(.v15), .watchOS(.v8), .tvOS(.v15)
+        .iOS(.v15), .watchOS(.v8), .tvOS(.v15), .macCatalyst(.v15), .macOS(.v12)
     ],
     products: [
         .library(

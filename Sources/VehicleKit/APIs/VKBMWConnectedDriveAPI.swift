@@ -74,22 +74,14 @@ public class VKBMWConnectedDriveAPI: VKVehicleAPIBase<VKBMWConnectedDriveAPI.Cre
             guard let url = URL(string: authConfig.endpoints.authenticate) else {
                 throw APIError.invalidAuthConfig
             }
-            var request = URLRequest(url: url)
-            request.httpMethod = "POST"
-            request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-            request.httpBody = body.data(using: .utf8)
-            let unknownResponse: URLResponse = try await withCheckedThrowingContinuation {
-                continuation in
-                URLSession.shared.dataTask(with: request) { _, response, error in
-                    if let error = error {
-                        continuation.resume(throwing: error)
-                    } else if let response = response {
-                        continuation.resume(returning: response)
-                    } else {
-                        continuation.resume(throwing: APIError.authResponseInvalid)
-                    }
-                }
-            }
+            let unknownResponse: URLResponse = try await VKHTTP.rawRequest(
+                url,
+                method: "POST",
+                body: body.data(using: .utf8),
+                headers: [
+                    "Content-Type": "application/x-www-form-urlencoded"
+                ]
+            ).response
             guard let response = unknownResponse as? HTTPURLResponse else {
                 throw APIError.authResponseInvalid
             }
@@ -171,26 +163,9 @@ public class VKBMWConnectedDriveAPI: VKVehicleAPIBase<VKBMWConnectedDriveAPI.Cre
         guard let url = components.url else {
             throw APIError.invalidURL
         }
-        var request = URLRequest(url: url)
-        request.httpMethod = method
-        request.setValue("Bearer \(session.token)", forHTTPHeaderField: "Authorization")
-        for header in headers {
-            request.setValue(header.value, forHTTPHeaderField: header.key)
-        }
-        request.httpBody = body
-        let data: Data = try await withCheckedThrowingContinuation {
-            continuation in
-            URLSession.shared.dataTask(with: request) { data, _, error in
-                if let error = error {
-                    continuation.resume(throwing: error)
-                } else if let data = data {
-                    continuation.resume(returning: data)
-                } else {
-                    continuation.resume(throwing: APIError.responseInvalid)
-                }
-            }
-        }
-        return try decoder.decode(ResponseType.self, from: data)
+        var allHeaders = headers
+        allHeaders["Authorization"] = "Bearer \(session.token)"
+        return try await VKHTTP.request(url, method: method, body: body, headers: headers).data
     }
 }
 
