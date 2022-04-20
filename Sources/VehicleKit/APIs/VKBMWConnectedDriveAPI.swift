@@ -6,7 +6,11 @@ public class VKBMWConnectedDriveAPI: VKVehicleAPIBase<VKBMWConnectedDriveAPI.Cre
         case cantEncodeRequestBody
         case invalidAuthConfig
         case authResponseNotHTTP
-        case authResponseMissingLocation
+        case authResponseMissingLocation(
+            status: Int,
+            headers: [AnyHashable: Any],
+            responseData: Data
+        )
         case cantDecodeAuthResponseLocation(location: String)
         case authResponseMissingToken(location: String)
         case authResponseMissingExpires(location: String)
@@ -92,19 +96,23 @@ public class VKBMWConnectedDriveAPI: VKVehicleAPIBase<VKBMWConnectedDriveAPI.Cre
             throw APIError.cantEncodeRequestBody
         }
         let url = try pathToURL(path: authConfig.endpoints.authenticate)
-        let unknownResponse: URLResponse = try await VKHTTP.rawRequest(
+        let requestResponse = try await VKHTTP.rawRequest(
             url,
             method: "POST",
             body: body.data(using: .utf8),
             headers: [
                 "Content-Type": "application/x-www-form-urlencoded"
             ]
-        ).response
-        guard let response = unknownResponse as? HTTPURLResponse else {
+        )
+        guard let response = requestResponse.response as? HTTPURLResponse else {
             throw APIError.authResponseNotHTTP
         }
         guard let location = response.value(forHTTPHeaderField: "Location") else {
-            throw APIError.authResponseMissingLocation
+            throw APIError.authResponseMissingLocation(
+                status: response.statusCode,
+                headers: response.allHeaderFields,
+                responseData: requestResponse.data
+            )
         }
         return location
     }
