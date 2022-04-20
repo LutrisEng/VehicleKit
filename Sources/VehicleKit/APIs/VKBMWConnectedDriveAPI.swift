@@ -71,14 +71,23 @@ public class VKBMWConnectedDriveAPI: VKVehicleAPIBase<VKBMWConnectedDriveAPI.Cre
         ]
     }
 
+    private func pathToURL(path: String) throws -> URL {
+        guard var components = URLComponents(string: host) else {
+            throw APIError.invalidHost
+        }
+        components.path = path
+        guard let url = components.url else {
+            throw APIError.invalidURL
+        }
+        return url
+    }
+
     private func authRedirectLocation(credentials: Credentials) async throws -> String {
         let parameters = authenticationParameters(credentials: credentials)
         guard let body = VKCommon.encodeURIQuery(parameters: parameters) else {
             throw APIError.cantEncodeRequestBody
         }
-        guard let url = URL(string: authConfig.endpoints.authenticate) else {
-            throw APIError.invalidAuthConfig
-        }
+        let url = try pathToURL(path: authConfig.endpoints.authenticate)
         let unknownResponse: URLResponse = try await VKHTTP.rawRequest(
             url,
             method: "POST",
@@ -164,13 +173,7 @@ public class VKBMWConnectedDriveAPI: VKVehicleAPIBase<VKBMWConnectedDriveAPI.Cre
         forceLogin: Bool = false
     ) async throws -> ResponseType {
         let session = try await getSession()
-        guard var components = URLComponents(string: host) else {
-            throw APIError.invalidHost
-        }
-        components.path = path
-        guard let url = components.url else {
-            throw APIError.invalidURL
-        }
+        let url = try pathToURL(path: path)
         var allHeaders = headers
         allHeaders["Authorization"] = "Bearer \(session.token)"
         return try await VKHTTP.request(url, method: method, body: body, headers: headers).data
