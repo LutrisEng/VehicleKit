@@ -37,6 +37,15 @@ public class VKBMWConnectedDriveAPI: VKVehicleAPIBase<VKBMWConnectedDriveAPI.Cre
         let redirectURI: String
         let responseType: String
         let scope: String
+        let grantType: String
+    }
+
+    private struct AuthResponse: Codable {
+        let redirectTo: String
+
+        enum CodingKeys: String, CodingKey {
+            case redirectTo = "redirect_to"
+        }
     }
 
     // From https://github.com/jorgenkg/nodejs-connected-drive/blob/master/lib/config/default.ts
@@ -45,9 +54,10 @@ public class VKBMWConnectedDriveAPI: VKVehicleAPIBase<VKBMWConnectedDriveAPI.Cre
         state: "https://mygarage.bmwusa.com/",
         endpoints: Endpoints(authenticate: "/gcdm/oauth/authenticate"),
         clientID: "0ff35533-1794-499b-90bb-1a80ddc24e20",
-        redirectURI: "https://www.bmw-connecteddrive.com/app/static/external-dispatch.html",
-        responseType: "token",
-        scope: "authenticate_user vehicle_data remote_services"
+        redirectURI: "https://mygarage.bmwusa.com/content/mybmw/en/code-receiver.html",
+        responseType: "code",
+        scope: "authenticate_user vehicle_data remote_services fupo",
+        grantType: "authorizationCode"
     )
 
     private struct Session {
@@ -75,7 +85,8 @@ public class VKBMWConnectedDriveAPI: VKVehicleAPIBase<VKBMWConnectedDriveAPI.Cre
             "scope": authConfig.scope,
             "username": credentials.username,
             "password": credentials.password,
-            "state": authConfig.state
+            "state": authConfig.state,
+            "grant_type": authConfig.grantType
         ]
     }
 
@@ -96,26 +107,15 @@ public class VKBMWConnectedDriveAPI: VKVehicleAPIBase<VKBMWConnectedDriveAPI.Cre
             throw APIError.cantEncodeRequestBody
         }
         let url = try pathToURL(path: authConfig.endpoints.authenticate)
-        let requestResponse = try await VKHTTP.rawRequest(
+        let response: AuthResponse = try await VKHTTP.request(
             url,
             method: "POST",
             body: body.data(using: .utf8),
             headers: [
                 "Content-Type": "application/x-www-form-urlencoded"
             ]
-        )
-        guard let response = requestResponse.response as? HTTPURLResponse else {
-            throw APIError.authResponseNotHTTP
-        }
-        guard let location = response.value(forHTTPHeaderField: "Location") else {
-            throw APIError.authResponseMissingLocation(
-                status: response.statusCode,
-                headers: response.allHeaderFields,
-                responseData: requestResponse.data,
-                responseString: String(decoding: requestResponse.data, as: UTF8.self)
-            )
-        }
-        return location
+        ).data
+        return response.redirectTo.dropFirst("redirect_uri=".count)
     }
 
     private func authenticate() async throws -> Session {
