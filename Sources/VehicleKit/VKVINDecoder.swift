@@ -1,6 +1,6 @@
 import Foundation
 
-public struct VINDecoder {
+public struct VKVINDecoder {
     struct ResponseResult: Codable {
         let value: String?
         let valueId: String?
