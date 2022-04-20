@@ -9,7 +9,8 @@ public class VKBMWConnectedDriveAPI: VKVehicleAPIBase<VKBMWConnectedDriveAPI.Cre
         case authResponseMissingLocation(
             status: Int,
             headers: [AnyHashable: Any],
-            responseData: Data
+            responseData: Data,
+            responseString: String?
         )
         case cantDecodeAuthResponseLocation(location: String)
         case authResponseMissingToken(location: String)
@@ -111,7 +112,8 @@ public class VKBMWConnectedDriveAPI: VKVehicleAPIBase<VKBMWConnectedDriveAPI.Cre
             throw APIError.authResponseMissingLocation(
                 status: response.statusCode,
                 headers: response.allHeaderFields,
-                responseData: requestResponse.data
+                responseData: requestResponse.data,
+                responseString: String(decoding: requestResponse.data, as: UTF8.self)
             )
         }
         return location
